@@ -1,0 +1,26 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 40-worker-custom-journald
+spec:
+  config:
+    ignition:
+      config: {}
+      security:
+        tls: {}
+      timeouts: {}
+      version: 2.2.0
+    networkd: {}
+    passwd: {}
+    storage:
+      files:
+      - contents:
+          source: data:text/plain;charset=utf-8;base64,IyAgVGhpcyBmaWxlIGlzIHBhcnQgb2Ygc3lzdGVtZC4KIwojICBzeXN0ZW1kIGlzIGZyZWUgc29mdHdhcmU7IHlvdSBjYW4gcmVkaXN0cmlidXRlIGl0IGFuZC9vciBtb2RpZnkgaXQKIyAgdW5kZXIgdGhlIHRlcm1zIG9mIHRoZSBHTlUgTGVzc2VyIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgYXMgcHVibGlzaGVkIGJ5CiMgIHRoZSBGcmVlIFNvZnR3YXJlIEZvdW5kYXRpb247IGVpdGhlciB2ZXJzaW9uIDIuMSBvZiB0aGUgTGljZW5zZSwgb3IKIyAgKGF0IHlvdXIgb3B0aW9uKSBhbnkgbGF0ZXIgdmVyc2lvbi4KIwojIEVudHJpZXMgaW4gdGhpcyBmaWxlIHNob3cgdGhlIGNvbXBpbGUgdGltZSBkZWZhdWx0cy4KIyBZb3UgY2FuIGNoYW5nZSBzZXR0aW5ncyBieSBlZGl0aW5nIHRoaXMgZmlsZS4KIyBEZWZhdWx0cyBjYW4gYmUgcmVzdG9yZWQgYnkgc2ltcGx5IGRlbGV0aW5nIHRoaXMgZmlsZS4KIwojIFNlZSBqb3VybmFsZC5jb25mKDUpIGZvciBkZXRhaWxzLgoKW0pvdXJuYWxdCiNTdG9yYWdlPWF1dG8KI0NvbXByZXNzPXllcwojU2VhbD15ZXMKI1NwbGl0TW9kZT11aWQKI1N5bmNJbnRlcnZhbFNlYz01bQojUmF0ZUxpbWl0SW50ZXJ2YWxTZWM9MzBzCiNSYXRlTGltaXRCdXJzdD0xMDAwMAojU3lzdGVtTWF4VXNlPQojU3lzdGVtS2VlcEZyZWU9CiNTeXN0ZW1NYXhGaWxlU2l6ZT0KI1N5c3RlbU1heEZpbGVzPTEwMAojUnVudGltZU1heFVzZT0KI1J1bnRpbWVLZWVwRnJlZT0KI1J1bnRpbWVNYXhGaWxlU2l6ZT0KI1J1bnRpbWVNYXhGaWxlcz0xMDAKI01heFJldGVudGlvblNlYz0KI01heEZpbGVTZWM9MW1vbnRoCkZvcndhcmRUb1N5c2xvZz15ZXMKI0ZvcndhcmRUb0tNc2c9bm8KI0ZvcndhcmRUb0NvbnNvbGU9bm8KI0ZvcndhcmRUb1dhbGw9eWVzCiNUVFlQYXRoPS9kZXYvY29uc29sZQojTWF4TGV2ZWxTdG9yZT1kZWJ1ZwojTWF4TGV2ZWxTeXNsb2c9ZGVidWcKI01heExldmVsS01zZz1ub3RpY2UKI01heExldmVsQ29uc29sZT1pbmZvCiNNYXhMZXZlbFdhbGw9ZW1lcmcKI0xpbmVNYXg9NDhLClN0b3JhZ2U9cGVyc2lzdGVudAo=
+          verification: {}
+        filesystem: root
+        mode: 420
+        path: /etc/systemd/journald.conf 
+    systemd: {}
+  osImageURL: ""
