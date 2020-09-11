@@ -17,6 +17,12 @@ spec:
       containers:
       - name: rsyslogd
         env:
+          - name: NODENAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: LOGSERVER
+            value: 'logs.example.com' # Change this to match your environment
           - name: SYSLOGD_OPTIONS
             value: '-f /config/rsyslog.conf'
         image: registry.redhat.io/rhel8/rsyslog
@@ -39,12 +45,16 @@ spec:
         - mountPath: /config
           name: rsyslogd-config
           readOnly: true
-        - mountPath: /var/log/journal
-          name: varlogjournal
+        - mountPath: /var/log
+          name: varlog
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       dnsPolicy: ClusterFirst
       schedulerName: default-scheduler
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
       securityContext: {}
       serviceAccount: logcollector
       serviceAccountName: logcollector
@@ -54,9 +64,9 @@ spec:
           name: rsyslogd-config
         name: rsyslogd-config
       - hostPath:
-          path: /var/log/journal
+          path: /var/log
           type: ""
-        name: varlogjournal
+        name: varlog
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:

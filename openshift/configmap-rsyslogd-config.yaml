@@ -4,4 +4,28 @@ metadata:
   name: rsyslogd-config
   namespace: openshift-logging
 data:
-  rsyslog.conf: "module(load=\"imuxsock\" \t  # provides support for local system logging (e.g. via logger command)\n       SysSock.Use=\"off\") # Turn off message reception via local log socket; \n\t\t\t  # local messages are retrieved through imjournal now.\nmodule(load=\"imjournal\" \t    # provides access to the systemd journal\n       StateFile=\"imjournal.state\"  # File to store the position in the journal\n       Remote=\"on\")                 # Also read other machine's journals\nglobal(workDirectory=\"/tmp\") module(load=\"builtin:omfile\" Template=\"RSYSLOG_TraditionalFileFormat\")\n*.info;mail.none;authpriv.none;cron.none                /tmp/messages\n"
+  rsyslog.conf: |2
+    global(LocalHostName=`echo $NODENAME`)
+    global(workDirectory="/tmp")
+    
+    module(load="imuxsock"    # provides support for local system logging (e.g. via logger command)
+           SysSock.Use="off") # Turn off message reception via local log socket; 
+                              # local messages are retrieved through imjournal now.
+    module(load="imjournal"   # provides access to the systemd journal
+           StateFile="imjournal.state"  # File to store the position in the journal
+           Remote="on")                 # Also read logs from the host
+    module(load="builtin:omfile" Template="RSYSLOG_TraditionalFileFormat")
+    module(load="imfile" PollingInterval="10")
+    input(type="imfile" file="/var/log/containers/*.log"
+           tag="kubernetes"
+           Severity="info"
+           Facility="local0")
+    ruleset(name="to_remote")
+    {
+        action(type="omfwd"
+            target  = `echo $LOGSERVER`
+            port    = "514"
+            protocol= "udp"
+            )
+    }
+    call to_remote
