@@ -16,10 +16,51 @@ data:
            Remote="on")                 # Also read logs from the host
     module(load="builtin:omfile" Template="RSYSLOG_TraditionalFileFormat")
     module(load="imfile" PollingInterval="10")
+    
+    template(name="kube-log-forwarding" type="list") {
+        constant(value="<")
+        property(name="pri")
+        constant(value=">")
+        property(name="timestamp" dateFormat="rfc3339")
+        constant(value=" ")
+        property(name="hostname")
+        constant(value=" ")
+        property(name="syslogtag" position.from="1" position.to="32")
+        constant(value=": ")
+        property(name="$.pod")
+        constant(value=" ")
+        property(name="$.namespace")
+        constant(value=" ")
+        property(name="$.container")
+        constant(value=" ")
+        property(name="msg" spifno1stsp="on" )
+        property(name="msg")
+        }
+    
+    # Gather Kubernetes Metadata from the filename
+    ruleset(name="container_logs")
+    {
+        set $.pod = re_extract($!metadata!filename, "/var/log/containers/(.*)_(.*)_(.*).log", 0, 1, "");
+        set $.namespace = re_extract($!metadata!filename, "/var/log/containers/(.*)_(.*)_(.*).log", 0, 2, "");
+        set $.container = re_extract($!metadata!filename, "/var/log/containers/(.*)_(.*)_(.*).log", 0, 3, "");
+        
+        action(type="omfwd"
+               target  = `echo $LOGSERVER`
+               port    = "514"
+               protocol= "udp"
+               template= "kube-log-forwarding"
+               )
+        stop
+    }
+    
+    # Follow the container log files
     input(type="imfile" file="/var/log/containers/*.log"
            tag="kubernetes"
            Severity="info"
-           Facility="local0")
+           Facility="local0"
+           ruleset="container_logs")
+    
+    # Basic forwarding to remote syslog server
     ruleset(name="to_remote")
     {
         action(type="omfwd"
