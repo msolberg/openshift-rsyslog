@@ -44,6 +44,14 @@ data:
         set $.pod = field($.pod_namespace_container, "_", 1);
         set $.namespace = field($.pod_namespace_container, "_", 2);
         set $.container = field($.pod_namespace_container, "_", 3);
+        
+        action(type="omfwd"
+            target  = `echo $LOGSERVER`
+            port    = "514"
+            protocol= "udp"
+            template= "kube-log-forwarding"
+            )
+        stop
     }
     
     # Follow the container log files
