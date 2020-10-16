@@ -6,7 +6,7 @@ metadata:
 data:
   rsyslog.conf: |2
     global(LocalHostName=`echo $NODENAME`)
-    global(workDirectory="/tmp")
+    global(workDirectory="/var/tmp")
     
     module(load="imuxsock"    # provides support for local system logging (e.g. via logger command)
            SysSock.Use="off") # Turn off message reception via local log socket; 
@@ -40,17 +40,10 @@ data:
     # Gather Kubernetes Metadata from the filename
     ruleset(name="container_logs")
     {
-        set $.pod = re_extract($!metadata!filename, "/var/log/containers/(.*)_(.*)_(.*).log", 0, 1, "");
-        set $.namespace = re_extract($!metadata!filename, "/var/log/containers/(.*)_(.*)_(.*).log", 0, 2, "");
-        set $.container = re_extract($!metadata!filename, "/var/log/containers/(.*)_(.*)_(.*).log", 0, 3, "");
-        
-        action(type="omfwd"
-               target  = `echo $LOGSERVER`
-               port    = "514"
-               protocol= "udp"
-               template= "kube-log-forwarding"
-               )
-        stop
+        set $.pod_namespace_container = re_extract($!metadata!filename, "/var/log/containers/(.*).log", 0, 1, "");
+        set $.pod = field($.pod_namespace_container, "_", 1);
+        set $.namespace = field($.pod_namespace_container, "_", 2);
+        set $.container = field($.pod_namespace_container, "_", 3);
     }
     
     # Follow the container log files
