@@ -27,9 +27,9 @@ $ oc create rolebinding log-collector-privileged-binding \
 
 3) Deploy the rsyslogd container as a daemonset
 
-First, edit [openshift/configmap-rsyslogd-config.yaml](configmap-rsyslogd-config.yaml) if you'd like to change the configuration of rsyslogd.
+First, edit [openshift/configmap-rsyslogd-config.yaml](openshift/configmap-rsyslogd-config.yaml) if you'd like to change the configuration of rsyslogd.
 
-Then, change the environment variable ```LOGSERVER``` in [openshift/daemonset-rsyslogd.yaml](daemonset-rsyslogd.yaml) to point to your particular log server.
+Then, change the environment variable ```LOGSERVER``` in [openshift/daemonset-rsyslogd.yaml](openshift/daemonset-rsyslogd.yaml) to point to your particular log server.
 
 Finally, deploy the config file and daemonset:
 
