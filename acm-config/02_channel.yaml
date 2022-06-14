@@ -1,0 +1,9 @@
+apiVersion: apps.open-cluster-management.io/v1
+kind: Channel
+metadata:
+  name: openshift-rsyslog-channel
+  namespace: openshift-rsyslog
+spec:
+  pathname: 'https://github.com/msolberg/openshift-rsyslog.git'
+  type: GitHub
+
