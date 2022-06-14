@@ -1,7 +1,7 @@
 apiVersion: apps.open-cluster-management.io/v1
 kind: Subscription
 metadata:
-  name: openshift-rsyslog-app-cluster1
+  name: openshift-rsyslog-app-cluster2
   namespace: openshift-rsyslog
   labels:
     deployment: openshift-rsyslog-app
