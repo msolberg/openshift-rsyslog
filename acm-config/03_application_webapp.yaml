@@ -1,0 +1,15 @@
+apiVersion: app.k8s.io/v1beta1
+kind: Application
+metadata:
+  name: openshift-rsyslog-app     
+  namespace: openshift-rsyslog
+spec:
+  selector:
+    matchExpressions:
+      - key: deployment  
+        operator: In
+        values:
+        - openshift-rsyslog-app
+  componentKinds:
+  - group: app.ibm.com/v1alpha1
+    kind: Subscription

@@ -1,0 +1,16 @@
+apiVersion: apps.open-cluster-management.io/v1
+kind: Subscription
+metadata:
+  name: openshift-rsyslog-app-cluster2
+  namespace: openshift-rsyslog
+  labels:
+    deployment: openshift-rsyslog-app
+  annotations:
+    apps.open-cluster-management.io/github-branch: trunk
+    apps.open-cluster-management.io/github-path: clusters/overlays/cluster2
+spec:
+  channel:  openshift-rsyslog/openshift-rsyslog-channel
+  placement: 
+    placementRef: 
+      kind: PlacementRule
+      name: cluster2
