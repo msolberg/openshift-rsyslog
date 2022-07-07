@@ -1,10 +1,4 @@
 bases:
 - ../../base
-configMapGenerator:
-- name: rsyslogd-config
-  files:
-  - RTORootCA.crt
-  - listen.conf
-  - openshift_api.conf
-  - rsyslog.conf
-  - logendpoint.conf
+resources:
+- rsyslog-config.yml

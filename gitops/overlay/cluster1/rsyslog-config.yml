@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rsyslogd-config
+data:
+  RTORootCA.crt: |-
+    -----BEGIN CERTIFICATE-----
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    DUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERTDUMMYCERT
+    -----END CERTIFICATE-----
+  listen.conf: $SystemLogSocketName /run/systemd/journal/syslog
+  logendpoint.conf: |
+    $DefaultNetstreamDriverCAFile /config/RTORootCA.crt
+    # JSON format for Log Insight
+
+    template(name="rto-log-forwarding" type="string"
+      string="<%PRI%>1 %TIMESTAMP:::date-rfc3164% %$.clustername% %$.containertag%: %$!all-json%\n")
+
+    template(name="rto-logevent-forwarding" type="string"
+      string="<%PRI%>1 %TIMESTAMP:::date-rfc3164% %$.clustername% %$.logeventtag%: %$!kubernetes!host% %$!kubernetes!namespace_name% %$!kubernetes!pod_name% %$!kubernetes!container_name% cmdb:%$!kubernetes!labels!application% %$!@timestamp% %$!message%\n")
+
+    template(name="rto-securityevent-forwarding" type="string"
+      string="<%PRI%>1 %TIMESTAMP:::date-rfc3164% %$.clustername% %$.securityeventtag%: %$!kubernetes!host% %$!kubernetes!namespace_name% %$!kubernetes!pod_name% %$!kubernetes!container_name% cmdb:%$!kubernetes!labels!application% %$!@timestamp% %$!message%\n")
+
+    template(name="timereportedrfc3339" type="string"
+      string="%timereported:::date-rfc3339%")
+
+    ruleset(name="container_logs") {
+      #TODO - set env variable for below 4 lines
+      # THESE ARE GLOBALS CURRENTLY MANUALLY SET
+      set $.containertag = "clustertag.container";
+      set $.logeventtag = "clustertag.logevent";
+      set $.securityeventtag = "clustertag.securityevent";
+      set $.clustername = "cluster1";
+      # THESE COME FROM THE FILENAME
+
+      set $.pod_namespace_container = re_extract($!metadata!filename, "/var/log/containers/(.*).log", 0, 1, "");
+      set $.pod = field($.pod_namespace_container, 95, 1);
+      set $.namespace = field($.pod_namespace_container, 95, 2);
+      set $.container = field($.pod_namespace_container, 95, 3);
+      set $!docker!container_id = $.container;
+      set $!kubernetes!host = $hostname;
+      set $!kubernetes!pod_name = $.pod;
+      set $!kubernetes!namespace_name = $.namespace;
+      set $!kubernetes!container_name = $.container;
+      set $!kubernetes!labels!application = field($.namespace, 45, 1);
+      set $!kubernetes!labels!deploymentConfig = field($.pod, 45, 1);
+      set $!kubernetes!labels!microservice = field($.pod, 45, 1);
+      set $!hostname = $hostname;
+      set $.writetime = exec_template("timereportedrfc3339");
+      set $.message = $msg;
+      set $!message = $.message;
+      set $!@timestamp = $.writetime;
+      unset $!metadata;
+
+      if ($.namespace == "openshift-apiserver") or ($.namespace == "openshift-etcd") or ($.namespace == "openshift-cluster-version") then {
+        stop
+      }
+
+      action(type="omfwd" name="loginsight_endpoint" Template="rto-log-forwarding" Target="loginsight" Port="1514" Protocol="tcp" StreamDriverMode="1" StreamDriver="gtls" StreamDriverAuthMode="anon")
+      # Log to disk for debugging purposes only
+      # action(type="omfile" Template="RSYSLOG_DebugFormat" File="/var/log/rsyslog-debug.log")
+      # action(type="omfile" Template="rto-log-forwarding" File="/var/log/rsyslog-debug.log")
+      stop
+    }
+
+    # Follow the container log files
+    input(type="imfile" file="/var/log/containers/*.log"
+      tag="kubernetes"
+      Severity="info"
+      Facility="local0"
+      endmsg.regex="^.*std... F "
+      ruleset="container_logs")
+  openshift_api.conf: |-
+    # Audit Log format for Log Insight
+    template(name="rto-auditlog-forwarding" type="string" string="<%PRI%>%TIMESTAMP:::date-rfc3339% %HOSTNAME% %syslogtag:1:32%%msg:::sp-if-no-1st-sp%%msg%")
+    # Forward k8s-audit logs
+    ruleset(name="audit_logs") {
+        action(type="omfwd" name="qradar_api_endpoint" Template="rto-auditlog-forwarding" Target="target.example.com" Port="514" Protocol="tcp" )
+        stop
+    }
+    input(type="imfile" file="/var/log/kube-apiserver/audit.log"
+            tag="k8s-audit"
+            Severity="info"
+            Facility="local0"
+            ruleset="audit_logs")
+  rsyslog.conf: |-
+    global(MaxMessageSize="8192")
+    global(LocalHostName=`echo $NODENAME`)
+    global(workDirectory="/var/tmp")
+    #### MODULES ####
+    module(load="imuxsock"    # provides support for local system logging (e.g. via logger command)
+            SysSock.Use="off") # Turn off message reception via local log socket;
+                                # local messages are retrieved through imjournal now.
+    module(load="imjournal"   # provides access to the systemd journal
+            StateFile="imjournal.state"  # File to store the position in the journal
+            Remote="on")                 # Also read logs from the host
+    module(load="builtin:omfile" Template="RSYSLOG_TraditionalFileFormat")
+    # Provides container logs via file
+    module(load="imfile" PollingInterval="10")
+
+    #### GLOBAL DIRECTIVES ####
+    # Include all config files in /etc/rsyslog.d/
+    $IncludeConfig /config/logendpoint.conf
+    $IncludeConfig /config/openshift_api.conf
+    #*.info;auth.info;authpriv.info;user.info;mail.none;cron.none @example.redhat.com
+    #Begin SIEM Configuration Version 1.1 - DATE: 9.9.2019
+    *.info;mail.none;cron.none;kern.none @example.redhat.com
+    #End SIEM Configuration
